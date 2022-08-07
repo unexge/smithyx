@@ -3,15 +3,20 @@ module.exports = grammar({
 
   rules: {
     source_file: ($) =>
-      seq($.ws, $.control_section, $.metadata_section, $.shape_section),
+      seq(
+        repeat($.ws),
+        repeat($.control_section),
+        repeat($.metadata_section),
+        optional($.shape_section),
+      ),
 
-    ws: ($) => repeat(choice($.sp, $.newline, $.comment)),
+    ws: ($) => choice($.sp, $.newline, $.comment),
 
-    sp: ($) => repeat(choice(" ", "\t")),
+    sp: ($) => /[ \t]/,
 
     br: ($) => seq($.sp, choice($.comment, $.newline), $.sp),
 
-    newline: ($) => choice("\n", "\r\n"),
+    newline: ($) => /(\r\n|\r|\n)/,
 
     comment: ($) => choice($.documentation_comment, $.line_comment),
 
@@ -21,21 +26,21 @@ module.exports = grammar({
 
     not_newline: ($) => /[^\S\r\n]/,
 
-    control_section: ($) => repeat($.control_statement),
+    control_section: ($) => $.control_statement,
 
     control_statement: ($) =>
-      seq("$", $.ws, $.node_object_key, $.ws, ":", $.ws, $.node_value, $.br),
+      seq("$", repeat($.ws), $.node_object_key, repeat($.ws), ":", repeat($.ws), $.node_value, $.br),
 
-    metadata_section: ($) => repeat($.metadata_statement),
+    metadata_section: ($) => $.metadata_statement,
 
     metadata_statement: ($) =>
       seq(
         "metadata",
-        $.ws,
+        repeat($.ws),
         $.node_object_key,
-        $.ws,
+        repeat($.ws),
         "=",
-        $.ws,
+        repeat($.ws),
         $.node_value,
         $.br
       ),
@@ -51,40 +56,40 @@ module.exports = grammar({
 
     node_array: ($) => choice($.empty_node_array, $.populated_node_array),
 
-    empty_node_array: ($) => seq("[", $.ws, "]"),
+    empty_node_array: ($) => seq("[", repeat($.ws), "]"),
 
     populated_node_array: ($) =>
       seq(
         "[",
-        $.ws,
+        repeat($.ws),
         $.node_value,
-        $.ws,
-        repeat(seq($.comma, $.node_value, $.ws)),
-        $.trailing_comma,
+        repeat($.ws),
+        repeat(seq($.comma, $.node_value, repeat($.ws))),
+        optional($.trailing_comma),
         "]"
       ),
 
-    trailing_comma: ($) => optional($.comma),
+    trailing_comma: ($) => $.comma,
 
-    comma: ($) => seq(",", $.ws),
+    comma: ($) => seq(",", repeat($.ws)),
 
     node_object: ($) => choice($.empty_node_object, $.populated_node_object),
 
-    empty_node_object: ($) => seq("{", $.ws, "}"),
+    empty_node_object: ($) => seq("{", repeat($.ws), "}"),
 
     populated_node_object: ($) =>
       seq(
         "{",
-        $.ws,
+        repeat($.ws),
         $.node_object_kvp,
-        $.ws,
-        repeat(seq($.comma, $.node_object_kvp, $.ws)),
-        $.trailing_comma,
+        repeat($.ws),
+        repeat(seq($.comma, $.node_object_kvp, repeat($.ws))),
+        optional($.trailing_comma),
         "}"
       ),
 
     node_object_kvp: ($) =>
-      seq($.node_object_key, $.ws, ":", $.ws, $.node_value),
+      seq($.node_object_key, repeat($.ws), ":", repeat($.ws), $.node_value),
 
     node_object_key: ($) => choice($.quoted_text, $.identifier),
 
@@ -152,24 +157,22 @@ module.exports = grammar({
     three_dquotes: ($) => seq($.dquote, $.dquote, $.dquote),
 
     shape_section: ($) =>
-      optional(
-        seq(
-          $.namespace_statement,
-          optional($.use_section),
-          optional($.shape_statements)
-        )
+      seq(
+        $.namespace_statement,
+        repeat($.use_section),
+        repeat($.shape_statements)
       ),
 
-    namespace_statement: ($) => seq("namespace", $.ws, $.namespace, $.br),
+    namespace_statement: ($) => seq("namespace", repeat($.ws), $.namespace, $.br),
 
-    use_section: ($) => repeat($.use_statement),
+    use_section: ($) => $.use_statement,
 
-    use_statement: ($) => seq("use", $.ws, $.absolute_root_shape_id, $.br),
+    use_statement: ($) => seq("use", repeat($.ws), $.absolute_root_shape_id, $.br),
 
     shape_statements: ($) =>
-      repeat(choice($.shape_statement, $.apply_statement)),
+      choice($.shape_statement, $.apply_statement),
 
-    shape_statement: ($) => seq($.trait_statements, $.shape_body, $.br),
+    shape_statement: ($) => seq(repeat($.trait_statements), $.shape_body, $.br),
 
     shape_body: ($) =>
       choice(
@@ -184,7 +187,7 @@ module.exports = grammar({
         $.resource_statement
       ),
 
-    simple_shape_statement: ($) => seq($.simple_type_name, $.ws, $.identifier),
+    simple_shape_statement: ($) => seq($.simple_type_name, repeat($.ws), $.identifier),
 
     simple_type_name: ($) =>
       choice(
@@ -206,61 +209,61 @@ module.exports = grammar({
     shape_members: ($) =>
       choice($.empty_shape_members, $.populated_shape_members),
 
-    empty_shape_members: ($) => seq("{", $.ws, "}"),
+    empty_shape_members: ($) => seq("{", repeat($.ws), "}"),
 
     populated_shape_members: ($) =>
       seq(
         "{",
-        $.ws,
+        repeat($.ws),
         $.shape_member_kvp,
-        repeat(seq($.comma, $.shape_member_kvp, $.ws)),
-        $.trailing_comma,
+        repeat(seq($.comma, $.shape_member_kvp, repeat($.ws))),
+        optional($.trailing_comma),
         "}"
       ),
 
     shape_member_kvp: ($) =>
-      seq($.trait_statements, $.identifier, $.ws, ":", $.ws, $.shape_id),
+      seq(repeat($.trait_statements), $.identifier, repeat($.ws), ":", repeat($.ws), $.shape_id),
 
     list_statement: ($) =>
-      seq("list", $.ws, $.identifier, $.ws, $.shape_members),
+      seq("list", repeat($.ws), $.identifier, repeat($.ws), $.shape_members),
 
-    set_statement: ($) => seq("set", $.ws, $.identifier, $.ws, $.shape_members),
+    set_statement: ($) => seq("set", repeat($.ws), $.identifier, repeat($.ws), $.shape_members),
 
-    map_statement: ($) => seq("map", $.ws, $.identifier, $.ws, $.shape_members),
+    map_statement: ($) => seq("map", repeat($.ws), $.identifier, repeat($.ws), $.shape_members),
 
     structure_statement: ($) =>
-      seq("structure", $.ws, $.identifier, $.ws, $.shape_members),
+      seq("structure", repeat($.ws), $.identifier, repeat($.ws), $.shape_members),
 
     union_statement: ($) =>
-      seq("union", $.ws, $.identifier, $.ws, $.shape_members),
+      seq("union", repeat($.ws), $.identifier, repeat($.ws), $.shape_members),
 
     service_statement: ($) =>
-      seq("service", $.ws, $.identifier, $.ws, $.node_object),
+      seq("service", repeat($.ws), $.identifier, repeat($.ws), $.node_object),
 
     operation_statement: ($) =>
-      seq("operation", $.ws, $.identifier, $.ws, $.node_object),
+      seq("operation", repeat($.ws), $.identifier, repeat($.ws), $.node_object),
 
     resource_statement: ($) =>
-      seq("resource", $.ws, $.identifier, $.ws, $.node_object),
+      seq("resource", repeat($.ws), $.identifier, repeat($.ws), $.node_object),
 
-    trait_statements: ($) => seq(repeat(seq($.ws, $.trait)), $.ws),
+    trait_statements: ($) => seq($.ws, $.trait, $.ws),
 
     trait: ($) => seq("@", $.shape_id, optional($.trait_body)),
 
-    trait_body: ($) => seq("(", $.ws, $.trait_body_value, $.ws, ")"),
+    trait_body: ($) => seq("(", repeat($.ws), $.trait_body_value, repeat($.ws), ")"),
 
     trait_body_value: ($) => choice($.trait_structure, $.node_value),
 
     trait_structure: ($) =>
       seq(
         $.trait_structure_kvp,
-        repeat(seq($.ws, $.comma, $.trait_structure_kvp))
+        repeat(seq(repeat($.ws), $.comma, $.trait_structure_kvp))
       ),
 
     trait_structure_kvp: ($) =>
-      seq($.node_object_key, $.ws, ":", $.ws, $.node_value),
+      seq($.node_object_key, repeat($.ws), ":", repeat($.ws), $.node_value),
 
-    apply_statement: ($) => seq("apply", $.ws, $.shape_id, $.ws, $.trait, $.br),
+    apply_statement: ($) => seq("apply", repeat($.ws), $.shape_id, repeat($.ws), $.trait, $.br),
 
     shape_id: ($) => seq($.root_shape_id, optional($.shape_id_member)),
 
