@@ -957,13 +957,6 @@
             "type": "SYMBOL",
             "name": "use_section"
           }
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "shape_statements"
-          }
         }
       ]
     },

@@ -160,7 +160,7 @@ module.exports = grammar({
       seq(
         $.namespace_statement,
         repeat($.use_section),
-        repeat($.shape_statements)
+        // repeat($.shape_statements)
       ),
 
     namespace_statement: ($) => seq("namespace", repeat($.ws), $.namespace, $.br),
